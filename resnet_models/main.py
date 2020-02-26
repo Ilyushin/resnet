@@ -23,8 +23,8 @@ def parse_args():
     parser.add_argument('-t', action='store_true', help='Train or not a model')
     parser.add_argument('-a', type=str, help='Type of architectures: resnet_34, resnet_50')
     parser.add_argument('-o', type=str, help='Output directory')
-    parser.add_argument('-m', type=str, help='Path to a pre-trained model')
-
+    parser.add_argument('--pretrained-model', type=str, help='Path to a pre-trained model')
+    parser.add_argument('--save-model', type=str, help='Path to a place fro saving a model.')
     parser.add_argument('--input-dev', type=str, help='Input directory with wav files for train')
     parser.add_argument('--input-eval', type=str,
                         help='Input directory with wav files for evaluation')
@@ -85,15 +85,19 @@ def train(model, dev_out_dir, eval_out_dir):
         log_dir='./logs/resnet'
     )
 
+    print('Started train the model')
     history = model.fit(
         train_dataset,
-        epochs=2,
+        epochs=100,
         steps_per_epoch=100,
         callbacks=[tensorboard_callback],
         verbose=1
     )
+    print('Finished train the model')
 
+    print('Started evaluate the model')
     model.evaluate(eval_dataset)
+    print('Finished evaluate the model')
 
     return model
 
@@ -121,16 +125,19 @@ def main():
             print('Need to specify the architecture.')
             sys.exit()
 
+        print('Started preparing train data')
         dev_out_dir = os.path.join(args.o, 'dev')
-        # helpers.create_dir(dev_out_dir)
-        # tf_transformation.wav_to_tf_records(
-        #     audio_path=args.input_dev,
-        #     out_path=dev_out_dir,
-        #     size=5000,
-        #     spec_format=tf_transformation.SpecFormat.STFT,
-        #     spec_shape=(300, 80, 1)
-        # )
+        helpers.create_dir(dev_out_dir)
+        tf_transformation.wav_to_tf_records(
+            audio_path=args.input_dev,
+            out_path=dev_out_dir,
+            size=5000,
+            spec_format=tf_transformation.SpecFormat.STFT,
+            spec_shape=(300, 80, 1)
+        )
+        print('Finished preparing train data')
 
+        print('Started preparing eval data')
         eval_out_dir = os.path.join(args.o, 'eval')
         helpers.create_dir(eval_out_dir)
         tf_transformation.wav_to_tf_records(
@@ -139,11 +146,15 @@ def main():
             spec_format=tf_transformation.SpecFormat.MEL_SPEC,
             spec_shape=(300, 80, 1)
         )
+        print('Finished preparing train data')
 
         model = train(model, dev_out_dir, eval_out_dir)
 
+        if args.save_model:
+            model.save(os.path.join(args.save_model, 'model.h5'))
+
     else:
-        model = tf.keras.models.load_model(args.m)
+        model = tf.keras.models.load_model(args.pretrained_model)
 
     sys.exit()
 
