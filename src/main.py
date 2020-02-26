@@ -73,7 +73,7 @@ def train(model, dev_out_dir, valid_out_dir, epochs=100, batch_size=128):
     train_dataset = train_dataset.map(parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
     # Randomizes input using a window of 256 elements (read into memory)
-    train_dataset = train_dataset.repeat(10)  # Repeats dataset this # times
+    train_dataset = train_dataset.repeat()  # Repeats dataset this # times
     train_dataset = train_dataset.batch(batch_size)  # Batch size to use
     # dataset = dataset.prefetch(3)
 
