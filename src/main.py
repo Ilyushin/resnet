@@ -2,9 +2,12 @@ import os
 import sys
 import argparse
 import tensorflow as tf
+import tensorflow_addons as tfa
 from signal_transformation import helpers, tf_transformation
 from src.models import resnet_34, resnet_50
 import src.metrics as metrics
+
+tf.config.experimental_run_functions_eagerly(True)
 
 
 def parse_args():
@@ -17,17 +20,21 @@ def parse_args():
         Raises:
 
     """
-    parser = argparse.ArgumentParser(description='The app allows to different ResNet architectures')
+    parser = argparse.ArgumentParser(
+        description='The app allows to train different ResNet architectures')
 
     # Required argument
-    parser.add_argument('-t', action='store_true', help='Train or not a model')
-    parser.add_argument('-a', type=str, help='Type of architectures: resnet_34, resnet_50')
-    parser.add_argument('-o', type=str, help='Output directory')
-    parser.add_argument('--pretrained-model', type=str, help='Path to a pre-trained model')
+    parser.add_argument('-t', action='store_true', help='Train or not a model.')
+    parser.add_argument('-a', type=str, help='Type of architectures: resnet_34, resnet_50.')
+    parser.add_argument('-o', type=str, help='Output directory.')
+    parser.add_argument('-p', action='store_true', help='Preparing or not data.')
+    parser.add_argument('--pretrained-model', type=str, help='Path to a pre-trained model.')
     parser.add_argument('--save-model', type=str, help='Path to a place fro saving a model.')
-    parser.add_argument('--input-dev', type=str, help='Input directory with wav files for train')
+    parser.add_argument('--input-dev', type=str, help='Input directory with wav files for train.')
     parser.add_argument('--input-eval', type=str,
-                        help='Input directory with wav files for evaluation')
+                        help='Input directory with wav files for evaluation.')
+    parser.add_argument('-e', type=int, default=100, help='Number of epochs.')
+    parser.add_argument('-b', type=int, default=128, help='Butch size.')
 
     return parser.parse_args()
 
@@ -55,9 +62,10 @@ def parse_fn(serialized, spec_shape=(300, 80, 1)):
     return spectrogram, label
 
 
-def train(model, dev_out_dir, eval_out_dir):
+def train(model, dev_out_dir, valid_out_dir, epochs=100, batch_size=128):
+    train_files = [item for item in helpers.find_files(dev_out_dir, pattern=['.tfrecords'])]
     train_dataset = tf.data.TFRecordDataset(
-        filenames=[item for item in helpers.find_files(dev_out_dir, pattern=['.tfrecords'])]
+        filenames=train_files
     )
     # Parse the serialized data in the TFRecords files.
     # This returns TensorFlow tensors for the spectrograms and labels.
@@ -66,38 +74,35 @@ def train(model, dev_out_dir, eval_out_dir):
 
     # Randomizes input using a window of 256 elements (read into memory)
     train_dataset = train_dataset.repeat(10)  # Repeats dataset this # times
-    train_dataset = train_dataset.batch(120)  # Batch size to use
+    train_dataset = train_dataset.batch(batch_size)  # Batch size to use
     # dataset = dataset.prefetch(3)
 
-    eval_dataset = tf.data.TFRecordDataset(
-        filenames=[item for item in helpers.find_files(eval_out_dir, pattern=['.tfrecords'])]
+    valid_dataset = tf.data.TFRecordDataset(
+        filenames=[item for item in helpers.find_files(valid_out_dir, pattern=['.tfrecords'])]
     )
-    eval_dataset = eval_dataset.map(parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    eval_dataset = eval_dataset.batch(120)
+    valid_dataset = valid_dataset.map(parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    valid_dataset = valid_dataset.batch(batch_size)
 
     model.compile(
         optimizer='adam',
-        loss='categorical_crossentropy',
-        metrics=['accuracy', metrics.eer]
+        loss=tfa.losses.TripletSemiHardLoss(),
+        metrics=[metrics.eer]
     )
 
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
-        log_dir='./logs/resnet'
+        log_dir='./logs/resnet/'
     )
 
     print('Started train the model')
     history = model.fit(
         train_dataset,
-        epochs=100,
-        steps_per_epoch=100,
+        epochs=epochs,
+        steps_per_epoch=int(len(train_files) / batch_size),
         callbacks=[tensorboard_callback],
+        validation_data=valid_dataset,
         verbose=1
     )
     print('Finished train the model')
-
-    print('Started evaluate the model')
-    model.evaluate(eval_dataset)
-    print('Finished evaluate the model')
 
     return model
 
@@ -125,30 +130,32 @@ def main():
             print('Need to specify the architecture.')
             sys.exit()
 
-        print('Started preparing train data')
         dev_out_dir = os.path.join(args.o, 'dev')
-        helpers.create_dir(dev_out_dir)
-        tf_transformation.wav_to_tf_records(
-            audio_path=args.input_dev,
-            out_path=dev_out_dir,
-            size=5000,
-            spec_format=tf_transformation.SpecFormat.STFT,
-            spec_shape=(300, 80, 1)
-        )
-        print('Finished preparing train data')
+        valid_out_dir = os.path.join(args.o, 'eval')
 
-        print('Started preparing eval data')
-        eval_out_dir = os.path.join(args.o, 'eval')
-        helpers.create_dir(eval_out_dir)
-        tf_transformation.wav_to_tf_records(
-            audio_path=args.input_eval,
-            out_path=eval_out_dir,
-            spec_format=tf_transformation.SpecFormat.MEL_SPEC,
-            spec_shape=(300, 80, 1)
-        )
-        print('Finished preparing train data')
+        if args.p:
+            print('Started preparing train data')
+            helpers.create_dir(dev_out_dir)
+            tf_transformation.wav_to_tf_records(
+                audio_path=args.input_dev,
+                out_path=dev_out_dir,
+                spec_format=tf_transformation.SpecFormat.MEL_SPEC,
+                spec_shape=(300, 80, 1)
+            )
+            print('Finished preparing train data')
+            print()
+            print('Started preparing validation data')
+            helpers.create_dir(valid_out_dir)
+            tf_transformation.wav_to_tf_records(
+                audio_path=args.input_eval,
+                out_path=valid_out_dir,
+                spec_format=tf_transformation.SpecFormat.MEL_SPEC,
+                spec_shape=(300, 80, 1)
+            )
+            print()
+            print('Finished preparing validation data')
 
-        model = train(model, dev_out_dir, eval_out_dir)
+        model = train(model, dev_out_dir, valid_out_dir, epochs=args.e, batch_size=args.b)
 
         if args.save_model:
             model.save(os.path.join(args.save_model, 'model.h5'))

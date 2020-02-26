@@ -51,7 +51,8 @@ def pairwise_distance(feature, squared=False):
 def pairwise_distance_eval(rows, cols, squared=False):
     pairwise_distances_squared = tf.add(
         tf.math.reduce_sum(input_tensor=tf.math.square(rows), axis=[1], keepdims=True),
-        tf.math.reduce_sum(input_tensor=tf.math.square(tf.linalg.matrix_transpose(cols)), axis=[0], keepdims=True)
+        tf.math.reduce_sum(input_tensor=tf.math.square(tf.linalg.matrix_transpose(cols)), axis=[0],
+                           keepdims=True)
     ) - 2.0 * tf.matmul(rows, tf.linalg.matrix_transpose(cols))
 
     # Deal with numerical inaccuracies. Set small negatives to zero.
@@ -156,10 +157,18 @@ def eer(embeddings_labels, embeddings, evaluation=False, num_thresholds=200, nam
         false_positive = metric_variable([num_thresholds], tf.float32, name='false_positive')
         false_negative = metric_variable([num_thresholds], tf.float32, name='false_negative')
 
-        true_positive_op = tf.compat.v1.assign_add(true_positive, tf.reduce_sum(input_tensor=is_true_positive, axis=1))
-        true_negative_op = tf.compat.v1.assign_add(true_negative, tf.reduce_sum(input_tensor=is_true_negative, axis=1))
-        false_positive_op = tf.compat.v1.assign_add(false_positive, tf.reduce_sum(input_tensor=is_false_positive, axis=1))
-        false_negative_op = tf.compat.v1.assign_add(false_negative, tf.reduce_sum(input_tensor=is_false_negative, axis=1))
+        true_positive_op = tf.compat.v1.assign_add(true_positive,
+                                                   tf.reduce_sum(input_tensor=is_true_positive,
+                                                                 axis=1))
+        true_negative_op = tf.compat.v1.assign_add(true_negative,
+                                                   tf.reduce_sum(input_tensor=is_true_negative,
+                                                                 axis=1))
+        false_positive_op = tf.compat.v1.assign_add(false_positive,
+                                                    tf.reduce_sum(input_tensor=is_false_positive,
+                                                                  axis=1))
+        false_negative_op = tf.compat.v1.assign_add(false_negative,
+                                                    tf.reduce_sum(input_tensor=is_false_negative,
+                                                                  axis=1))
 
         value, _, _, _ = compute_err(
             true_positive,
