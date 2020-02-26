@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+
 def convolutional_block(X, kernel_size, filters, stage, block, s=2):
     """
     Arguments:

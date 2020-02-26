@@ -14,8 +14,16 @@ setuptools.setup(
     long_description="The package contains ResNet architectures which were developed on TensorFlow",
     long_description_content_type="text/markdown",
     url="https://github.com/Ilyushin/resnet",
-    packages=['resnet_models'],
-    scripts=['resnet_models/main.py'],
+    packages=setuptools.find_packages(),
+    package_dir={
+        'resnet_models': 'src',
+
+    },
+    entry_points={
+        'console_scripts': [
+            'resnet_models=src.main:main',
+        ],
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

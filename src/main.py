@@ -3,8 +3,8 @@ import sys
 import argparse
 import tensorflow as tf
 from signal_transformation import helpers, tf_transformation
-from resnet_models.models import resnet_34, resnet_50
-import resnet_models.metrics as metrics
+from src.models import resnet_34, resnet_50
+import src.metrics as metrics
 
 
 def parse_args():

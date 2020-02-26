@@ -1,5 +1,5 @@
 import tensorflow as tf
-from resnet_models.models import blocks
+from src.models import blocks
 
 
 def get_model(input_shape=(300, 80, 1), embeddings_size=64):
