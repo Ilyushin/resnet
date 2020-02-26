@@ -1,6 +1,7 @@
 # ResNet models
 
-This library contains ResNet models, such as ResNet 34, ResNet 50, and functionality for helping train them on VoxCeleb1 for the speaker recognition task.
+This library contains ResNet models, such as ResNet 34, ResNet 50, and functionality for helping 
+train them on [VoxCeleb1](http://www.robots.ox.ac.uk/~vgg/data/voxceleb/vox1.html) for the speaker recognition task.
 
 ### Installation:
 
