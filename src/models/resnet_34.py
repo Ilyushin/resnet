@@ -15,7 +15,8 @@ def get_model(input_shape=(300, 80, 1), embeddings_size=64):
         kernel_size=(7, 7),
         strides=(2, 2),
         name='conv1',
-        kernel_initializer=tf.keras.initializers.glorot_uniform(seed=0)
+        kernel_initializer=tf.keras.initializers.glorot_uniform(seed=0),
+        kernel_regularizer=tf.keras.regularizers.l2(0.001)
     )(X)
     X = tf.keras.layers.BatchNormalization(axis=3, name='bn_conv1')(X)
     X = tf.keras.layers.Activation('relu')(X)
