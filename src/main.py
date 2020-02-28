@@ -73,22 +73,22 @@ def main():
 
         if args.p:
 
-            format = tf_transformation.SpecFormat.PCM
+            spect_format = tf_transformation.SpecFormat.PCM
             if args.format == 'stft':
-                format = tf_transformation.SpecFormat.STFT
+                spect_format = tf_transformation.SpecFormat.STFT
             elif args.format == 'mel_spec':
-                format = tf_transformation.SpecFormat.MEL_SPEC
+                spect_format = tf_transformation.SpecFormat.MEL_SPEC
             elif args.format == 'log_mel_spec':
-                format = tf_transformation.SpecFormat.LOG_MEL_SPEC
+                spect_format = tf_transformation.SpecFormat.LOG_MEL_SPEC
             elif args.format == 'mfcc':
-                format = tf_transformation.SpecFormat.MFCC
+                spect_format = tf_transformation.SpecFormat.MFCC
 
             print('Started preparing train data')
             helpers.create_dir(dev_out_dir)
             tf_transformation.wav_to_tf_records(
                 audio_path=args.input_dev,
                 out_path=dev_out_dir,
-                spec_format=format,
+                spec_format=spect_format,
                 spec_shape=(300, 80, 1)
             )
             print('Finished preparing train data')
@@ -98,7 +98,7 @@ def main():
             tf_transformation.wav_to_tf_records(
                 audio_path=args.input_eval,
                 out_path=valid_out_dir,
-                spec_format=format,
+                spec_format=spect_format,
                 spec_shape=(300, 80, 1)
             )
             print()
