@@ -6,7 +6,6 @@ from signal_transformation import helpers, tf_transformation
 from src.models import resnet_34, resnet_50
 from src.train import train
 
-
 tf.config.experimental_run_functions_eagerly(True)
 
 
@@ -35,6 +34,8 @@ def parse_args():
                         help='Input directory with wav files for evaluation.')
     parser.add_argument('-e', type=int, default=100, help='Number of epochs.')
     parser.add_argument('-b', type=int, default=128, help='Butch size.')
+    parser.add_argument('--format', type=str,
+                        help='Type of data: pcm, stft, mel_spec, log_mel_spec, mfcc')
 
     return parser.parse_args()
 
@@ -62,16 +63,32 @@ def main():
             print('Need to specify the architecture.')
             sys.exit()
 
-        dev_out_dir = os.path.join(args.o, 'dev')
-        valid_out_dir = os.path.join(args.o, 'eval')
+        dev_out_dir = os.path.join(args.o, 'dev/')
+        valid_out_dir = os.path.join(args.o, 'eval/')
+
+        number_dev_files = len(
+            [item for item in helpers.find_files(args.input_dev, pattern=['.wav'])])
+        number_val_files = len(
+            [item for item in helpers.find_files(args.input_eval, pattern=['.wav'])])
 
         if args.p:
+
+            format = tf_transformation.SpecFormat.PCM
+            if args.format == 'stft':
+                format = tf_transformation.SpecFormat.STFT
+            elif args.format == 'mel_spec':
+                format = tf_transformation.SpecFormat.MEL_SPEC
+            elif args.format == 'log_mel_spec':
+                format = tf_transformation.SpecFormat.LOG_MEL_SPEC
+            elif args.format == 'mfcc':
+                format = tf_transformation.SpecFormat.MFCC
+
             print('Started preparing train data')
             helpers.create_dir(dev_out_dir)
             tf_transformation.wav_to_tf_records(
                 audio_path=args.input_dev,
                 out_path=dev_out_dir,
-                spec_format=tf_transformation.SpecFormat.MEL_SPEC,
+                spec_format=format,
                 spec_shape=(300, 80, 1)
             )
             print('Finished preparing train data')
@@ -81,13 +98,21 @@ def main():
             tf_transformation.wav_to_tf_records(
                 audio_path=args.input_eval,
                 out_path=valid_out_dir,
-                spec_format=tf_transformation.SpecFormat.MEL_SPEC,
+                spec_format=format,
                 spec_shape=(300, 80, 1)
             )
             print()
             print('Finished preparing validation data')
 
-        model = train(model, dev_out_dir, valid_out_dir, epochs=args.e, batch_size=args.b)
+        model = train(
+            model,
+            dev_out_dir,
+            valid_out_dir,
+            number_dev_files=number_dev_files,
+            number_val_files=number_val_files,
+            epochs=args.e,
+            batch_size=args.b
+        )
 
         if args.save_model:
             path_to_model = os.path.join(args.save_model, '{}.h5'.format(args.a))

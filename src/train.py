@@ -28,7 +28,7 @@ def parse_fn(serialized, spec_shape=(300, 80, 1)):
     return spectrogram, label
 
 
-def train(model, dev_out_dir, valid_out_dir, epochs=100, batch_size=128):
+def train(model, dev_out_dir, valid_out_dir, number_dev_files=0, number_val_files=0, epochs=100, batch_size=128):
     train_files = [item for item in helpers.find_files(dev_out_dir, pattern=['.tfrecords'])]
     train_dataset = tf.data.TFRecordDataset(
         filenames=train_files
@@ -71,14 +71,16 @@ def train(model, dev_out_dir, valid_out_dir, epochs=100, batch_size=128):
         monitor='val_eer'
     )
 
+    steps_per_epoch = int((number_dev_files if number_dev_files else len(train_files)) / batch_size)
+    validation_steps = int((number_val_files if number_val_files else len(valid_dataset)) / batch_size)
     print('Started train the model')
     model.fit(
         train_dataset,
         epochs=epochs,
-        steps_per_epoch=int(len(train_files) / batch_size),
+        steps_per_epoch=steps_per_epoch,
         callbacks=[tensorboard_callback, cp_callback],
         validation_data=valid_dataset,
-        validation_steps=int(len(valid_files) / batch_size),
+        validation_steps=validation_steps,
         verbose=1
     )
     print('Finished train the model')
