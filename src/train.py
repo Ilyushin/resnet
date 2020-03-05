@@ -3,9 +3,11 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 from signal_transformation import helpers
 import src.metrics as metrics
+from src.settings import MAIN
 
 
-def parse_fn(serialized, spec_shape=(300, 80, 1)):
+def parse_fn(serialized):
+    spec_shape = MAIN['shape']
     size = spec_shape[0] * spec_shape[1] * spec_shape[2]
     features = {
         'spectrogram': tf.io.FixedLenFeature([size], tf.float32),
@@ -28,7 +30,8 @@ def parse_fn(serialized, spec_shape=(300, 80, 1)):
     return spectrogram, label
 
 
-def train(model, dev_out_dir, valid_out_dir, number_dev_files=0, number_val_files=0, epochs=100, batch_size=128):
+def train(model, dev_out_dir, valid_out_dir, number_dev_files=0, number_val_files=0, epochs=100,
+          batch_size=128):
     train_files = [item for item in helpers.find_files(dev_out_dir, pattern=['.tfrecords'])]
     train_dataset = tf.data.TFRecordDataset(
         filenames=train_files
@@ -52,10 +55,12 @@ def train(model, dev_out_dir, valid_out_dir, number_dev_files=0, number_val_file
     valid_dataset = valid_dataset.batch(batch_size)
 
     model.compile(
-        optimizer='adam',
-        loss=tfa.losses.TripletSemiHardLoss(),
-        metrics=[metrics.eer]
+        optimizer=tf.keras.optimizers.Adam(lr=1e-3),
+        loss='categorical_crossentropy',
+        metrics=['acc', metrics.eer]
     )
+
+    # print(model.summary())
 
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
         log_dir='./logs/resnet/tensorboard/'
@@ -71,8 +76,12 @@ def train(model, dev_out_dir, valid_out_dir, number_dev_files=0, number_val_file
         monitor='val_eer'
     )
 
-    steps_per_epoch = int((number_dev_files if number_dev_files else len(train_files)) / batch_size)
-    validation_steps = int((number_val_files if number_val_files else len(valid_dataset)) / batch_size)
+    steps_per_epoch = int(
+        (number_dev_files if number_dev_files else len(train_files)
+         ) / batch_size)
+    validation_steps = int(
+        (number_val_files if number_val_files else len(valid_dataset)
+         ) / batch_size)
     print('Started train the model')
     model.fit(
         train_dataset,

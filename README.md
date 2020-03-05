@@ -2,6 +2,8 @@
 
 This library contains ResNet models, such as ResNet 34, ResNet 50, and functionality for helping 
 train them on [VoxCeleb1](http://www.robots.ox.ac.uk/~vgg/data/voxceleb/vox1.html) for the speaker recognition task.
+Some parts of the architecture were taken from http://www.robots.ox.ac.uk:5000/~vgg/publications/2019/Xie19a/xie19a.pdf
+TensorFlow implementation - https://github.com/WeidiXie/VGG-Speaker-Recognition
 
 ### Installation:
 
@@ -16,6 +18,7 @@ resnet_models -t \
     -a resnet_34 \ 
     --input-dev ./vox1/dev/wav/ \
     --input-eval ./vox1/test/wav/ \
+    -p \
     -o ./data/ \
     --save-model ./test/model/ \
     -b 300

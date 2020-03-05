@@ -1,65 +1,96 @@
 import tensorflow as tf
 from src.models import blocks
+from src.settings import MAIN
 
 
-def get_model(input_shape=(300, 80, 1), embeddings_size=64):
+def get_model(input_shape=(300, 80, 1), embeddings_size=64, weight_decay=1e-4, bottleneck_dim=512):
     # Define the input as a tensor with shape input_shape
-    X_input = tf.keras.layers.Input(input_shape)
+    input_layer = tf.keras.layers.Input(input_shape)
 
     # Zero-Padding
-    X = tf.keras.layers.ZeroPadding2D((3, 3))(X_input)
+    # x = tf.keras.layers.ZeroPadding2D((3, 3))(input_layer)
 
     # Stage 1
-    X = tf.keras.layers.Conv2D(
+    x = tf.keras.layers.Conv2D(
         filters=64,
         kernel_size=(7, 7),
-        strides=(2, 2),
+        padding='same',
+        use_bias=False,
         name='conv1',
-        kernel_initializer=tf.keras.initializers.glorot_uniform(seed=0),
-        kernel_regularizer=tf.keras.regularizers.l2(0.001)
-    )(X)
-    X = tf.keras.layers.BatchNormalization(axis=3, name='bn_conv1')(X)
-    X = tf.keras.layers.Activation('relu')(X)
-    X = tf.keras.layers.MaxPooling2D((3, 3), strides=(2, 2))(X)
+        kernel_initializer='orthogonal',
+        kernel_regularizer=tf.keras.regularizers.l2(weight_decay)
+    )(input_layer)
+    x = tf.keras.layers.BatchNormalization(axis=3, name='bn_conv1')(x)
+    x = tf.keras.layers.Activation('relu')(x)
+    x = tf.keras.layers.MaxPooling2D((2, 2), strides=(2, 2))(x)
 
     # Stage 2
-    X = blocks.convolutional_block(X, kernel_size=3, filters=[48, 48, 96], stage=2, block='a', s=1)
-    X = blocks.identity_block(X, 3, [48, 48, 96], stage=2, block='b')
+    x = blocks.convolutional_block(x, kernel_size=3, filters=[48, 48, 96], stage=2, block='a',
+                                   strides=1)
+    x = blocks.identity_block(x, 3, [48, 48, 96], stage=2, block='b')
 
     # Stage 3 (≈4 lines)
-    X = blocks.convolutional_block(X, kernel_size=3, filters=[96, 96, 128], stage=3, block='a', s=2)
-    X = blocks.identity_block(X, 3, [96, 96, 128], stage=3, block='b')
-    X = blocks.identity_block(X, 3, [96, 96, 128], stage=3, block='c')
+    x = blocks.convolutional_block(x, kernel_size=3, filters=[96, 96, 128], stage=3, block='a',
+                                   strides=2
+                                   )
+    x = blocks.identity_block(x, 3, [96, 96, 128], stage=3, block='b')
+    x = blocks.identity_block(x, 3, [96, 96, 128], stage=3, block='c')
 
     # Stage 4 (≈6 lines)
-    X = blocks.convolutional_block(X, kernel_size=3, filters=[128, 128, 256], stage=4, block='a', s=2)
-    X = blocks.identity_block(X, 3, [128, 128, 256], stage=4, block='b')
-    X = blocks.identity_block(X, 3, [128, 128, 256], stage=4, block='c')
+    x = blocks.convolutional_block(x, kernel_size=3, filters=[128, 128, 256], stage=4, block='a',
+                                   strides=2)
+    x = blocks.identity_block(x, 3, [128, 128, 256], stage=4, block='b')
+    x = blocks.identity_block(x, 3, [128, 128, 256], stage=4, block='c')
 
     # Stage 5 (≈3 lines)
-    X = blocks.convolutional_block(X, kernel_size=3, filters=[256, 256, 512], stage=5, block='a', s=2)
-    X = blocks.identity_block(X, 3, [256, 256, 512], stage=5, block='b')
-    X = blocks.identity_block(X, 3, [256, 256, 512], stage=5, block='c')
+    x = blocks.convolutional_block(x, kernel_size=3, filters=[256, 256, 512], stage=5, block='a',
+                                   strides=2)
+    x = blocks.identity_block(x, 3, [256, 256, 512], stage=5, block='b')
+    x = blocks.identity_block(x, 3, [256, 256, 512], stage=5, block='c')
 
-    X = tf.keras.layers.AveragePooling2D(
-        pool_size=(2, 2),
-        strides=2,
-        padding='same'
-    )(X)
+    x = tf.keras.layers.MaxPooling2D(
+        pool_size=(3, 1),
+        strides=(2, 1),
+    )(x)
 
-    # output layer
-    X = tf.keras.layers.Flatten()(X)
-    X = tf.keras.layers.Dense(
-        embeddings_size,
-        activation=None,
+    x = tf.keras.layers.Conv2D(
+        filters=bottleneck_dim,
+        kernel_size=(7, 1),
+        strides=(1, 1),
+        activation='relu',
+        kernel_initializer='orthogonal',
+        use_bias=True,
+        trainable=True,
+        kernel_regularizer=tf.keras.regularizers.l2(weight_decay),
+        bias_regularizer=tf.keras.regularizers.l2(weight_decay),
+        name='x_fc')(x)
+
+    x = tf.keras.layers.AveragePooling2D((1, 5), strides=(1, 1), name='avg_pool')(x)
+    x = tf.keras.layers.Reshape((-1, bottleneck_dim))(x)
+
+    x = tf.keras.layers.Dense(
+        bottleneck_dim,
+        activation='relu',
+        kernel_initializer='orthogonal',
+        use_bias=True,
+        trainable=True,
+        kernel_regularizer=tf.keras.regularizers.l2(weight_decay),
+        bias_regularizer=tf.keras.regularizers.l2(weight_decay),
+        name='fc6')(x)
+
+    x = tf.keras.layers.Dense(
+        MAIN['num_classes'],
+        activation='softmax',
         name='fc' + str(embeddings_size),
-        kernel_initializer=tf.keras.initializers.glorot_uniform(seed=0),
-        kernel_regularizer=tf.keras.regularizers.l2(0.001)
-    )(X)
+        kernel_initializer='orthogonal',
+        kernel_regularizer=tf.keras.regularizers.l2(weight_decay),
+        bias_regularizer=tf.keras.regularizers.l2(weight_decay),
+        use_bias=False,
+    )(x)
 
-    X = tf.nn.l2_normalize(X, axis=1, epsilon=1e-12, name='output')
+    y = tf.nn.l2_normalize(x, axis=1, epsilon=1e-12, name='output')
 
     # Create model
-    model = tf.keras.models.Model(inputs=X_input, outputs=X, name='ResNet34')
+    model = tf.keras.models.Model(inputs=input_layer, outputs=y, name='ResNet34')
 
     return model

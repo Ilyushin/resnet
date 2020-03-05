@@ -17,7 +17,6 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     package_dir={
         'resnet_models': 'src',
-
     },
     entry_points={
         'console_scripts': [
