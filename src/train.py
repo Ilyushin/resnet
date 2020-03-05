@@ -4,63 +4,50 @@ import tensorflow_addons as tfa
 from signal_transformation import helpers
 import src.metrics as metrics
 from src.settings import MAIN
+from src.data_generator import DataGenerator
 
 
-def parse_fn(serialized):
-    spec_shape = MAIN['shape']
-    size = spec_shape[0] * spec_shape[1] * spec_shape[2]
-    features = {
-        'spectrogram': tf.io.FixedLenFeature([size], tf.float32),
-        'label': tf.io.FixedLenFeature([], tf.int64),
-        'height': tf.io.FixedLenFeature([], tf.int64),
-        'width': tf.io.FixedLenFeature([], tf.int64),
-        'depth': tf.io.FixedLenFeature([], tf.int64)
-    }
+def get_data(path_to_files):
+    x = []
+    y = {}
+    labels = {}
+    counter = 0
+    for idx, file_path in enumerate(helpers.find_files(path_to_files, pattern=['.npy'])):
+        x.append((idx, file_path))
+        speaker_id = file_path.split('/')[-3]
+        if speaker_id not in labels.keys():
+            labels[speaker_id] = counter
+            counter += 1
 
-    # Parse the serialized data so we get a dict with our data.
-    parsed_example = tf.io.parse_single_example(
-        serialized=serialized,
-        features=features
-    )
+        y[idx] = labels[speaker_id]
 
-    spectrogram = tf.cast(parsed_example['spectrogram'], tf.float32)
-    spectrogram = tf.reshape(spectrogram, [spec_shape[0], spec_shape[1], spec_shape[2]])
-    label = tf.cast(parsed_example['label'], tf.int64)
-
-    return spectrogram, label
+    return x, y
 
 
 def train(model, dev_out_dir, valid_out_dir, number_dev_files=0, number_val_files=0, epochs=100,
           batch_size=128):
-    train_files = [item for item in helpers.find_files(dev_out_dir, pattern=['.tfrecords'])]
-    train_dataset = tf.data.TFRecordDataset(
-        filenames=train_files
-    )
-    # Parse the serialized data in the TFRecords files.
-    # This returns TensorFlow tensors for the spectrograms and labels.
-    train_dataset = train_dataset.shuffle(buffer_size=300)
-    train_dataset = train_dataset.map(parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    # Parameters
+    params = {
+        'dim': MAIN['shape'],
+        'batch_size': batch_size,
+        'n_classes': MAIN['n_classes'],
+        'n_channels': 1,
+        'shuffle': True
+    }
 
-    # Randomizes input using a window of 256 elements (read into memory)
-    train_dataset = train_dataset.repeat()  # Repeats dataset this # times
-    train_dataset = train_dataset.batch(batch_size)  # Batch size to use
-    # dataset = dataset.prefetch(3)
+    # Datasets
+    train_files, train_labels = get_data(dev_out_dir)
+    valid_files, valid_labels = get_data(valid_out_dir)
 
-    valid_files = [item for item in helpers.find_files(valid_out_dir, pattern=['.tfrecords'])]
-    valid_dataset = tf.data.TFRecordDataset(
-        filenames=valid_files
-    )
-    valid_dataset = valid_dataset.map(parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    valid_dataset = valid_dataset.repeat()
-    valid_dataset = valid_dataset.batch(batch_size)
+    # Generators
+    training_generator = DataGenerator(train_files, train_labels, **params)
+    validation_generator = DataGenerator(valid_files, valid_labels, **params)
 
     model.compile(
         optimizer=tf.keras.optimizers.Adam(lr=1e-3),
         loss='categorical_crossentropy',
         metrics=['acc', metrics.eer]
     )
-
-    # print(model.summary())
 
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
         log_dir='./logs/resnet/tensorboard/'
@@ -76,19 +63,17 @@ def train(model, dev_out_dir, valid_out_dir, number_dev_files=0, number_val_file
         monitor='val_eer'
     )
 
-    steps_per_epoch = int(
-        (number_dev_files if number_dev_files else len(train_files)
-         ) / batch_size)
-    validation_steps = int(
-        (number_val_files if number_val_files else len(valid_dataset)
-         ) / batch_size)
+    steps_per_epoch = int(number_dev_files / batch_size)
+    validation_steps = int(number_val_files / batch_size)
     print('Started train the model')
     model.fit(
-        train_dataset,
+        training_generator,
+        validation_data=validation_generator,
+        use_multiprocessing=False,
+        workers=1,
         epochs=epochs,
         steps_per_epoch=steps_per_epoch,
         callbacks=[tensorboard_callback, cp_callback],
-        validation_data=valid_dataset,
         validation_steps=validation_steps,
         verbose=1
     )

@@ -5,7 +5,6 @@ import tensorflow as tf
 from signal_transformation import helpers, tf_transformation
 from src.models import resnet_34, resnet_50
 from src.train import train
-
 from src.settings import MAIN
 
 tf.config.experimental_run_functions_eagerly(True)
@@ -59,7 +58,7 @@ def main():
 
     if args.t:
         if args.a == 'resnet_34':
-            model = resnet_34.get_model(input_shape=shape, embeddings_size=64)
+            model = resnet_34.get_model(input_shape=shape, embeddings_size=512)
         elif args.a == 'resnet_50':
             model = resnet_50.get_model()
         else:
@@ -88,7 +87,7 @@ def main():
 
             print('Started preparing train data')
             helpers.create_dir(dev_out_dir)
-            tf_transformation.wav_to_tf_records(
+            tf_transformation.wav_to_numpy_arrays(
                 audio_path=args.input_dev,
                 out_path=dev_out_dir,
                 spec_format=spect_format,
@@ -98,7 +97,7 @@ def main():
             print()
             print('Started preparing validation data')
             helpers.create_dir(valid_out_dir)
-            tf_transformation.wav_to_tf_records(
+            tf_transformation.wav_to_numpy_arrays(
                 audio_path=args.input_eval,
                 out_path=valid_out_dir,
                 spec_format=spect_format,
@@ -106,6 +105,8 @@ def main():
             )
             print()
             print('Finished preparing validation data')
+
+        # print(model.summary())
 
         model = train(
             model,

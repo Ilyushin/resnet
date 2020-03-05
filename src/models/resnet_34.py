@@ -3,7 +3,7 @@ from src.models import blocks
 from src.settings import MAIN
 
 
-def get_model(input_shape=(300, 80, 1), embeddings_size=64, weight_decay=1e-4, bottleneck_dim=512):
+def get_model(input_shape=(300, 80, 1), embeddings_size=512, weight_decay=1e-4):
     # Define the input as a tensor with shape input_shape
     input_layer = tf.keras.layers.Input(input_shape)
 
@@ -54,7 +54,7 @@ def get_model(input_shape=(300, 80, 1), embeddings_size=64, weight_decay=1e-4, b
     )(x)
 
     x = tf.keras.layers.Conv2D(
-        filters=bottleneck_dim,
+        filters=embeddings_size,
         kernel_size=(7, 1),
         strides=(1, 1),
         activation='relu',
@@ -66,10 +66,12 @@ def get_model(input_shape=(300, 80, 1), embeddings_size=64, weight_decay=1e-4, b
         name='x_fc')(x)
 
     x = tf.keras.layers.AveragePooling2D((1, 5), strides=(1, 1), name='avg_pool')(x)
-    x = tf.keras.layers.Reshape((-1, bottleneck_dim))(x)
+    # x = tf.keras.layers.Reshape((-1, embeddings_size), name='reshape')(x)
+
+    x = tf.keras.layers.Flatten()(x)
 
     x = tf.keras.layers.Dense(
-        bottleneck_dim,
+        embeddings_size,
         activation='relu',
         kernel_initializer='orthogonal',
         use_bias=True,
@@ -79,7 +81,7 @@ def get_model(input_shape=(300, 80, 1), embeddings_size=64, weight_decay=1e-4, b
         name='fc6')(x)
 
     x = tf.keras.layers.Dense(
-        MAIN['num_classes'],
+        MAIN['n_classes'],
         activation='softmax',
         name='fc' + str(embeddings_size),
         kernel_initializer='orthogonal',

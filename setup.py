@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="resnet_models",
-    version="1.0.0",
+    version="1.0.1",
     author="Eugene Ilyushin",
     author_email="eugene.ilyushin@gmail.com",
     description="The package contains ResNet architectures which were developed on TensorFlow",
