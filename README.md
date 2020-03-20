@@ -15,6 +15,7 @@ chmod +x ./build_local.sh
 ### Execution:
 ```bash
 resnet_models -t \
+    -p \
     -a resnet_34 \ 
     --input-dev ./vox1/dev/wav/ \
     --input-eval ./vox1/test/wav/ \
