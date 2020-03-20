@@ -65,8 +65,9 @@ def main():
             print('Need to specify the architecture.')
             sys.exit()
 
-        dev_out_dir = os.path.join(args.o, 'dev/')
-        valid_out_dir = os.path.join(args.o, 'eval/')
+        data_dir = os.path.join(args.o, 'data/')
+        dev_out_dir = os.path.join(data_dir, 'dev/')
+        valid_out_dir = os.path.join(data_dir, 'eval/')
 
         number_dev_files = len(
             [item for item in helpers.find_files(args.input_dev, pattern=['.wav'])])
@@ -74,7 +75,6 @@ def main():
             [item for item in helpers.find_files(args.input_eval, pattern=['.wav'])])
 
         if args.p:
-
             spect_format = tf_transformation.SpecFormat.PCM
             if args.format == 'stft':
                 spect_format = tf_transformation.SpecFormat.STFT
@@ -112,6 +112,7 @@ def main():
             model,
             dev_out_dir,
             valid_out_dir,
+            args.o,
             number_dev_files=number_dev_files,
             number_val_files=number_val_files,
             epochs=args.e,

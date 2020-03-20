@@ -3,9 +3,9 @@ from src.models import blocks
 from src.settings import MAIN
 
 
-def get_model(input_shape=(300, 80, 1), embeddings_size=512, weight_decay=1e-4):
+def get_model(input_shape=(257, 998, 1), embeddings_size=512, weight_decay=1e-4):
     # Define the input as a tensor with shape input_shape
-    input_layer = tf.keras.layers.Input(input_shape)
+    input_layer = tf.keras.layers.Input(shape=input_shape, name='input')
 
     # Zero-Padding
     # x = tf.keras.layers.ZeroPadding2D((3, 3))(input_layer)
@@ -26,53 +26,52 @@ def get_model(input_shape=(300, 80, 1), embeddings_size=512, weight_decay=1e-4):
 
     # Stage 2
     x = blocks.convolutional_block(x, kernel_size=3, filters=[48, 48, 96], stage=2, block='a',
-                                   strides=1)
-    x = blocks.identity_block(x, 3, [48, 48, 96], stage=2, block='b')
+                                   strides=(1, 1), trainable=True)
+    x = blocks.identity_block(x, 3, [48, 48, 96], stage=2, block='b', trainable=True)
 
     # Stage 3 (≈4 lines)
     x = blocks.convolutional_block(x, kernel_size=3, filters=[96, 96, 128], stage=3, block='a',
-                                   strides=2
-                                   )
-    x = blocks.identity_block(x, 3, [96, 96, 128], stage=3, block='b')
-    x = blocks.identity_block(x, 3, [96, 96, 128], stage=3, block='c')
+                                   trainable=True)
+    x = blocks.identity_block(x, 3, [96, 96, 128], stage=3, block='b', trainable=True)
+    x = blocks.identity_block(x, 3, [96, 96, 128], stage=3, block='c', trainable=True)
 
     # Stage 4 (≈6 lines)
     x = blocks.convolutional_block(x, kernel_size=3, filters=[128, 128, 256], stage=4, block='a',
-                                   strides=2)
-    x = blocks.identity_block(x, 3, [128, 128, 256], stage=4, block='b')
-    x = blocks.identity_block(x, 3, [128, 128, 256], stage=4, block='c')
+                                   trainable=True)
+    x = blocks.identity_block(x, 3, [128, 128, 256], stage=4, block='b', trainable=True)
+    x = blocks.identity_block(x, 3, [128, 128, 256], stage=4, block='c', trainable=True)
 
     # Stage 5 (≈3 lines)
     x = blocks.convolutional_block(x, kernel_size=3, filters=[256, 256, 512], stage=5, block='a',
-                                   strides=2)
-    x = blocks.identity_block(x, 3, [256, 256, 512], stage=5, block='b')
-    x = blocks.identity_block(x, 3, [256, 256, 512], stage=5, block='c')
+                                   trainable=True)
+    x = blocks.identity_block(x, 3, [256, 256, 512], stage=5, block='b', trainable=True)
+    x = blocks.identity_block(x, 3, [256, 256, 512], stage=5, block='c', trainable=True)
 
     x = tf.keras.layers.MaxPooling2D(
         pool_size=(3, 1),
         strides=(2, 1),
+        padding='same'
     )(x)
 
-    x = tf.keras.layers.Conv2D(
-        filters=embeddings_size,
-        kernel_size=(7, 1),
-        strides=(1, 1),
-        activation='relu',
-        kernel_initializer='orthogonal',
-        use_bias=True,
-        trainable=True,
-        kernel_regularizer=tf.keras.regularizers.l2(weight_decay),
-        bias_regularizer=tf.keras.regularizers.l2(weight_decay),
-        name='x_fc')(x)
+    # x = tf.keras.layers.Conv2D(
+    #     filters=embeddings_size,
+    #     kernel_size=(7, 1),
+    #     strides=(1, 1),
+    #     activation='relu',
+    #     kernel_initializer='orthogonal',
+    #     use_bias=True,
+    #     trainable=True,
+    #     kernel_regularizer=tf.keras.regularizers.l2(weight_decay),
+    #     bias_regularizer=tf.keras.regularizers.l2(weight_decay),
+    #     name='x_fc')(x)
 
-    x = tf.keras.layers.AveragePooling2D((1, 5), strides=(1, 1), name='avg_pool')(x)
+    # x = tf.keras.layers.AveragePooling2D((1, 5), strides=(1, 1), name='avg_pool')(x)
     # x = tf.keras.layers.Reshape((-1, embeddings_size), name='reshape')(x)
-
     x = tf.keras.layers.Flatten()(x)
 
     x = tf.keras.layers.Dense(
         embeddings_size,
-        activation='relu',
+        activation=None,
         kernel_initializer='orthogonal',
         use_bias=True,
         trainable=True,
@@ -80,17 +79,18 @@ def get_model(input_shape=(300, 80, 1), embeddings_size=512, weight_decay=1e-4):
         bias_regularizer=tf.keras.regularizers.l2(weight_decay),
         name='fc6')(x)
 
-    x = tf.keras.layers.Dense(
+    y = tf.keras.layers.Dense(
         MAIN['n_classes'],
         activation='softmax',
         name='fc' + str(embeddings_size),
         kernel_initializer='orthogonal',
         kernel_regularizer=tf.keras.regularizers.l2(weight_decay),
-        bias_regularizer=tf.keras.regularizers.l2(weight_decay),
+        # bias_regularizer=tf.keras.regularizers.l2(weight_decay),
         use_bias=False,
+        trainable=True
     )(x)
 
-    y = tf.nn.l2_normalize(x, axis=1, epsilon=1e-12, name='output')
+    # y = tf.nn.l2_normalize(x, axis=1, epsilon=1e-12, name='output')
 
     # Create model
     model = tf.keras.models.Model(inputs=input_layer, outputs=y, name='ResNet34')

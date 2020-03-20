@@ -1,7 +1,9 @@
 import tensorflow as tf
 
 
-def convolutional_block(x, kernel_size, filters, stage, block, strides=2, weight_decay=1e-4):
+def convolutional_block(input_tensor, kernel_size, filters, stage, block, strides=(2, 2),
+                        weight_decay=1e-4,
+                        trainable=True):
     """
     Arguments:
     x -- input tensor of shape (m, n_H_prev, n_W_prev, n_C_prev)
@@ -20,68 +22,69 @@ def convolutional_block(x, kernel_size, filters, stage, block, strides=2, weight
     bn_name_base = 'bn' + str(stage) + block + '_branch'
 
     # Retrieve Filters
-    F1, F2, F3 = filters
+    filter1, filter2, filter3 = filters
 
     dropout = 0.5
-
-    # Save the input value
-    x_shortcut = x
 
     ##### MAIN PATH #####
     # First component of main path
     x = tf.keras.layers.Conv2D(
-        filters=F1,
+        filters=filter1,
         kernel_size=(1, 1),
-        strides=(strides, strides),
+        strides=strides,
         use_bias=False,
+        trainable=trainable,
         name=conv_name_base + '2a',
         kernel_initializer='orthogonal',
         kernel_regularizer=tf.keras.regularizers.l2(weight_decay)
-    )(x)
-    x = tf.keras.layers.BatchNormalization(axis=3, name=bn_name_base + '2a')(x)
+    )(input_tensor)
+    x = tf.keras.layers.BatchNormalization(axis=3, trainable=trainable, name=bn_name_base + '2a')(x)
     x = tf.keras.layers.Activation('relu')(x)
 
     # Second component of main path
     x = tf.keras.layers.Conv2D(
-        filters=F2,
-        kernel_size=(kernel_size, kernel_size),
-        use_bias=False,
+        filters=filter2,
+        kernel_size=kernel_size,
         padding='same',
+        use_bias=False,
+        trainable=trainable,
         name=conv_name_base + '2b',
         kernel_initializer='orthogonal',
         kernel_regularizer=tf.keras.regularizers.l2(weight_decay)
     )(x)
-    x = tf.keras.layers.BatchNormalization(axis=3, name=bn_name_base + '2b')(x)
+    x = tf.keras.layers.BatchNormalization(axis=3, trainable=trainable, name=bn_name_base + '2b')(x)
     x = tf.keras.layers.Activation('relu')(x)
-    x = tf.keras.layers.Dropout(dropout)(x)
+    # x = tf.keras.layers.Dropout(dropout)(x)
 
     # Third component of main path
     x = tf.keras.layers.Conv2D(
-        filters=F3,
+        filters=filter3,
         kernel_size=(1, 1),
         use_bias=False,
+        trainable=trainable,
         name=conv_name_base + '2c',
         kernel_initializer='orthogonal',
         kernel_regularizer=tf.keras.regularizers.l2(weight_decay)
     )(x)
-    x = tf.keras.layers.BatchNormalization(axis=3, name=bn_name_base + '2c')(x)
+    x = tf.keras.layers.BatchNormalization(axis=3, trainable=trainable, name=bn_name_base + '2c')(x)
 
     ##### SHORTCUT PATH ####
     x_shortcut = tf.keras.layers.Conv2D(
-        filters=F3,
+        filters=filter3,
         kernel_size=(1, 1),
-        strides=(strides, strides),
+        strides=strides,
         use_bias=False,
-        padding='valid',
+        trainable=trainable,
         name=conv_name_base + '1',
         kernel_initializer='orthogonal',
         kernel_regularizer=tf.keras.regularizers.l2(weight_decay)
-    )(x_shortcut)
+    )(input_tensor)
     x_shortcut = tf.keras.layers.BatchNormalization(
         axis=3,
+        trainable=trainable,
         name=bn_name_base + '1'
     )(x_shortcut)
-    x = tf.keras.layers.Dropout(dropout)(x)
+    # x = tf.keras.layers.Dropout(dropout)(x)
 
     # Final step: Add shortcut value to main path, and pass it through a RELU activation (≈2 lines)
     x = tf.keras.layers.Add()([x, x_shortcut])
@@ -90,7 +93,8 @@ def convolutional_block(x, kernel_size, filters, stage, block, strides=2, weight
     return x
 
 
-def identity_block(x, kernel_size, filters, stage, block, weight_decay=1e-4):
+def identity_block(input_tensor, kernel_size, filters, stage, block, weight_decay=1e-4,
+                   trainable=True):
     """
     Arguments:
     x -- input tensor of shape (m, n_H_prev, n_W_prev, n_C_prev)
@@ -108,49 +112,49 @@ def identity_block(x, kernel_size, filters, stage, block, weight_decay=1e-4):
     bn_name_base = 'bn' + str(stage) + block + '_branch'
 
     # Retrieve Filters
-    F1, F2, F3 = filters
-
-    # Save the input value. You'll need this later to add back to the main path.
-    predict_shortcut = x
+    filter1, filter2, filter3 = filters
 
     # First component of main path
     x = tf.keras.layers.Conv2D(
-        filters=F1,
+        filters=filter1,
         kernel_size=(1, 1),
         use_bias=False,
+        trainable=trainable,
         name=conv_name_base + '2a',
         kernel_initializer='orthogonal',
         kernel_regularizer=tf.keras.regularizers.l2(weight_decay)
-    )(x)
-    x = tf.keras.layers.BatchNormalization(axis=3, name=bn_name_base + '2a')(x)
+    )(input_tensor)
+    x = tf.keras.layers.BatchNormalization(axis=3, trainable=trainable, name=bn_name_base + '2a')(x)
     x = tf.keras.layers.Activation('relu')(x)
 
     # Second component of main path
     x = tf.keras.layers.Conv2D(
-        filters=F2,
-        kernel_size=(kernel_size, kernel_size),
+        filters=filter2,
+        kernel_size=kernel_size,
         padding='same',
         use_bias=False,
+        trainable=trainable,
         name=conv_name_base + '2b',
         kernel_initializer='orthogonal',
         kernel_regularizer=tf.keras.regularizers.l2(weight_decay)
     )(x)
-    x = tf.keras.layers.BatchNormalization(axis=3, name=bn_name_base + '2b')(x)
+    x = tf.keras.layers.BatchNormalization(axis=3, trainable=trainable, name=bn_name_base + '2b')(x)
     x = tf.keras.layers.Activation('relu')(x)
 
     # Third component of main path
     x = tf.keras.layers.Conv2D(
-        filters=F3,
+        filters=filter3,
         kernel_size=(1, 1),
         use_bias=False,
+        trainable=trainable,
         name=conv_name_base + '2c',
         kernel_initializer='orthogonal',
         kernel_regularizer=tf.keras.regularizers.l2(weight_decay)
     )(x)
-    x = tf.keras.layers.BatchNormalization(axis=3, name=bn_name_base + '2c')(x)
+    x = tf.keras.layers.BatchNormalization(axis=3, trainable=trainable, name=bn_name_base + '2c')(x)
 
     # Final step
-    x = tf.keras.layers.Add()([x, predict_shortcut])
+    x = tf.keras.layers.Add()([x, input_tensor])
     x = tf.keras.layers.Activation('relu')(x)
 
     return x

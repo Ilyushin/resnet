@@ -23,3 +23,6 @@ resnet_models -t \
     --save-model ./test/model/ \
     -b 300
 ```
+
+### Pre-trained models
+1) [ResNet 34](https://1drv.ms/u/s!AgTCRsS6Et0Cvptmqy_NQ1EGM8rSiA?e=m1y8Cj)

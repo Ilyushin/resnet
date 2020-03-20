@@ -24,7 +24,8 @@ def get_data(path_to_files):
     return x, y
 
 
-def train(model, dev_out_dir, valid_out_dir, number_dev_files=0, number_val_files=0, epochs=100,
+def train(model, dev_out_dir, valid_out_dir, output_dir, number_dev_files=0, number_val_files=0,
+          epochs=100,
           batch_size=128):
     # Parameters
     params = {
@@ -46,25 +47,37 @@ def train(model, dev_out_dir, valid_out_dir, number_dev_files=0, number_val_file
     model.compile(
         optimizer=tf.keras.optimizers.Adam(lr=1e-3),
         loss='categorical_crossentropy',
-        metrics=['acc', metrics.eer]
+        metrics=['acc']
     )
+
+    # print(model.summary())
+
+    # tf.keras.utils.plot_model(
+    #     model,
+    #     to_file=os.path.join(output_dir, 'logs/resnet/model.png'),
+    #     show_shapes=True,
+    #     show_layer_names=True,
+    #     rankdir='TB',
+    #     expand_nested=False,
+    #     dpi=96
+    # )
 
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
-        log_dir='./logs/resnet/tensorboard/'
+        log_dir=os.path.join(output_dir, 'logs/resnet/tensorboard/')
     )
 
-    helpers.create_dir('./logs/resnet/checkpoints/')
+    helpers.create_dir(os.path.join(output_dir, 'logs/resnet/checkpoints/'))
     cp_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath='./logs/resnet/checkpoints/model.{epoch:02d}.tf',
+        filepath=os.path.join(output_dir, 'logs/resnet/checkpoints/model.{epoch:02d}.tf'),
         verbose=0,
         save_weights_only=False,
         save_freq='epoch',
         save_best_only=True,
-        monitor='val_eer'
+        monitor='val_acc'
     )
 
-    steps_per_epoch = int(number_dev_files / batch_size)
-    validation_steps = int(number_val_files / batch_size)
+    # steps_per_epoch = int(number_dev_files / batch_size)
+    # validation_steps = int(number_val_files / batch_size)
     print('Started train the model')
     model.fit(
         training_generator,
@@ -72,9 +85,9 @@ def train(model, dev_out_dir, valid_out_dir, number_dev_files=0, number_val_file
         use_multiprocessing=False,
         workers=1,
         epochs=epochs,
-        steps_per_epoch=steps_per_epoch,
+        steps_per_epoch=len(training_generator),
         callbacks=[tensorboard_callback, cp_callback],
-        validation_steps=validation_steps,
+        validation_steps=len(validation_generator),
         verbose=1
     )
     print('Finished train the model')
