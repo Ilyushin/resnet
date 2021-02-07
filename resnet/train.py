@@ -2,9 +2,9 @@ import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 from signal_transformation import helpers
-import src.metrics as metrics
-from src.settings import MAIN
-from src.data_generator import DataGenerator
+import resnet.metrics as metrics
+from resnet.settings import MAIN
+from resnet.data_generator import DataGenerator
 
 
 def get_data(path_to_files):

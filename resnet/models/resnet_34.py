@@ -1,9 +1,8 @@
 import tensorflow as tf
-from src.models import blocks
-from src.settings import MAIN
+from resnet.models import blocks
 
 
-def get_model(input_shape=(257, 998, 1), embeddings_size=512, weight_decay=1e-4):
+def get_model(input_shape=(257, 998, 1), embeddings_size=512, weight_decay=1e-4, n_classes=5994):
     # Define the input as a tensor with shape input_shape
     input_layer = tf.keras.layers.Input(shape=input_shape, name='input')
 
@@ -80,7 +79,7 @@ def get_model(input_shape=(257, 998, 1), embeddings_size=512, weight_decay=1e-4)
         name='fc6')(x)
 
     y = tf.keras.layers.Dense(
-        MAIN['n_classes'],
+        n_classes,
         activation='softmax',
         name='fc' + str(embeddings_size),
         kernel_initializer='orthogonal',

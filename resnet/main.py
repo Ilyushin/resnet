@@ -3,9 +3,9 @@ import sys
 import argparse
 import tensorflow as tf
 from signal_transformation import helpers, tf_transformation
-from src.models import resnet_34, resnet_50
-from src.train import train
-from src.settings import MAIN
+from resnet.models import resnet_34, resnet_50
+from resnet.train import train
+from resnet.settings import MAIN
 
 tf.config.experimental_run_functions_eagerly(True)
 
@@ -58,7 +58,9 @@ def main():
 
     if args.t:
         if args.a == 'resnet_34':
-            model = resnet_34.get_model(input_shape=shape, embeddings_size=512)
+            model = resnet_34.get_model(input_shape=shape,
+                                        embeddings_size=512,
+                                        n_classes=MAIN['n_classes'])
         elif args.a == 'resnet_50':
             model = resnet_50.get_model()
         else:
