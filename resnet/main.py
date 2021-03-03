@@ -24,12 +24,12 @@ def parse_args():
         description='The app allows to train different ResNet architectures')
 
     # Required argument
-    parser.add_argument('-t', action='store_true', help='Train or not a model.')
+    parser.add_argument('-t', action='store_true', help='Train or not a models.')
     parser.add_argument('-a', type=str, help='Type of architectures: resnet_34, resnet_50.')
     parser.add_argument('-o', type=str, help='Output directory.')
     parser.add_argument('-p', action='store_true', help='Preparing or not data.')
-    parser.add_argument('--pretrained-model', type=str, help='Path to a pre-trained model.')
-    parser.add_argument('--save-model', type=str, help='Path to a place fro saving a model.')
+    parser.add_argument('--pretrained-models', type=str, help='Path to a pre-trained models.')
+    parser.add_argument('--save-models', type=str, help='Path to a place fro saving a models.')
     parser.add_argument('--input-dev', type=str, help='Input directory with wav files for train.')
     parser.add_argument('--input-eval', type=str,
                         help='Input directory with wav files for evaluation.')
@@ -108,7 +108,7 @@ def main():
             print()
             print('Finished preparing validation data')
 
-        # print(model.summary())
+        # print(models.summary())
 
         model = train(
             model,

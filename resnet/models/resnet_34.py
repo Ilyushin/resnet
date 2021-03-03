@@ -91,7 +91,7 @@ def get_model(input_shape=(257, 998, 1), embeddings_size=512, weight_decay=1e-4,
 
     # y = tf.nn.l2_normalize(x, axis=1, epsilon=1e-12, name='output')
 
-    # Create model
+    # Create models
     model = tf.keras.models.Model(inputs=input_layer, outputs=y, name='ResNet34')
 
     return model

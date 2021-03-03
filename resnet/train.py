@@ -50,11 +50,11 @@ def train(model, dev_out_dir, valid_out_dir, output_dir, number_dev_files=0, num
         metrics=['acc']
     )
 
-    # print(model.summary())
+    # print(models.summary())
 
     # tf.keras.utils.plot_model(
-    #     model,
-    #     to_file=os.path.join(output_dir, 'logs/resnet/model.png'),
+    #     models,
+    #     to_file=os.path.join(output_dir, 'logs/resnet/models.png'),
     #     show_shapes=True,
     #     show_layer_names=True,
     #     rankdir='TB',
@@ -68,7 +68,7 @@ def train(model, dev_out_dir, valid_out_dir, output_dir, number_dev_files=0, num
 
     helpers.create_dir(os.path.join(output_dir, 'logs/resnet/checkpoints/'))
     cp_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath=os.path.join(output_dir, 'logs/resnet/checkpoints/model.{epoch:02d}.tf'),
+        filepath=os.path.join(output_dir, 'logs/resnet/checkpoints/models.{epoch:02d}.tf'),
         verbose=0,
         save_weights_only=False,
         save_freq='epoch',
@@ -78,7 +78,7 @@ def train(model, dev_out_dir, valid_out_dir, output_dir, number_dev_files=0, num
 
     # steps_per_epoch = int(number_dev_files / batch_size)
     # validation_steps = int(number_val_files / batch_size)
-    print('Started train the model')
+    print('Started train the models')
     model.fit(
         training_generator,
         validation_data=validation_generator,
@@ -90,9 +90,9 @@ def train(model, dev_out_dir, valid_out_dir, output_dir, number_dev_files=0, num
         validation_steps=len(validation_generator),
         verbose=1
     )
-    print('Finished train the model')
+    print('Finished train the models')
 
-    # history_eval = model.evaluate(valid_dataset, use_multiprocessing=True, verbose=0)
+    # history_eval = models.evaluate(valid_dataset, use_multiprocessing=True, verbose=0)
 
     # print('Eval loss:', history_eval[0])
     # print('Eval err:', history_eval[1])

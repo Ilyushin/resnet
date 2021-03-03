@@ -2,7 +2,7 @@ import tensorflow as tf
 from resnet.models import blocks
 
 
-def get_model(input_shape=(300, 80, 1), embeddings_size=64):
+def get_model(input_shape=(300, 80, 1), weight_decay=1e-4, n_classes=5994):
     # Define the input as a tensor with shape input_shape
     X_input = tf.keras.layers.Input(input_shape)
 
@@ -44,24 +44,20 @@ def get_model(input_shape=(300, 80, 1), embeddings_size=64):
     X = blocks.identity_block(X, 3, [512, 512, 2048], stage=5, block='b')
     X = blocks.identity_block(X, 3, [512, 512, 2048], stage=5, block='c')
 
-    X = tf.keras.layers.AveragePooling2D(
-        pool_size=(2, 2),
-        strides=2,
-        padding='same'
-    )(X)
+    x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    x = tf.keras.layers.Dense(
+        n_classes,
+        kernel_initializer='orthogonal',
+        kernel_regularizer=tf.keras.regularizers.l2(weight_decay),
+        bias_regularizer=tf.keras.regularizers.l2(weight_decay),
+        name='fc1000')(
+        x)
 
-    # output layer
-    X = tf.keras.layers.Flatten()(X)
-    X = tf.keras.layers.Dense(
-        embeddings_size, activation='softmax',
-        name='fc' + str(embeddings_size),
-        kernel_initializer=tf.keras.initializers.glorot_uniform(seed=0),
-        kernel_regularizer=tf.keras.regularizers.l2(0.001)
-    )(X)
+    # A softmax that is followed by the models loss must be done cannot be done
+    # in float16 due to numeric issues. So we pass dtype=float32.
+    x = tf.keras.layers.Activation('softmax', dtype='float32')(x)
 
-    X = tf.nn.l2_normalize(X, axis=1, epsilon=1e-12, name='output')
-
-    # Create model
-    model = tf.keras.models.Model(inputs=X_input, outputs=X, name='ResNet50')
+    # Create models
+    model = tf.keras.models.Model(inputs=X_input, outputs=x, name='ResNet50')
 
     return model

@@ -59,13 +59,14 @@ def get_model(input_shape=None, embeddings_size=512, weight_decay=1e-4, n_classe
         kernel_regularizer=tf.keras.regularizers.l2(weight_decay),
         bias_regularizer=tf.keras.regularizers.l2(weight_decay),
         name='fc1000')(
-        x)
+        x
+    )
 
     # A softmax that is followed by the models loss must be done cannot be done
     # in float16 due to numeric issues. So we pass dtype=float32.
     x = tf.keras.layers.Activation('softmax', dtype='float32')(x)
 
     # Create models
-    model = tf.keras.models.Model(inputs=x_input, outputs=x, name='ResNet50')
+    model = tf.keras.models.Model(inputs=x_input, outputs=x, name='ResNet18')
 
     return model
