@@ -5,9 +5,12 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+with open("requirements.txt", "r") as fh:
+    requirements = fh.readlines()
+
 setuptools.setup(
     name="resnet_models",
-    version="1.0.2",
+    version="1.1.0",
     author="Eugene Ilyushin",
     author_email="eugene.ilyushin@gmail.com",
     description="The package contains ResNet architectures which were developed on TensorFlow",
@@ -28,9 +31,5 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    install_requires=[
-        'tensorflow',
-        'pylint',
-        'signal-transformation'
-    ],
+    install_requires=requirements
 )

@@ -213,3 +213,42 @@ class VladPooling(tf.keras.layers.Layer):
         )
 
         return outputs
+
+
+def resnet_18_basic_block(input_tensor=None, filters=None, stride=None):
+    x = tf.keras.layers.Conv2D(filters=filters,
+                               kernel_size=(3, 3),
+                               strides=stride,
+                               kernel_initializer='he_normal',
+                               padding="same")(input_tensor)
+    x = tf.keras.layers.BatchNormalization(axis=3)(x)
+    x = tf.keras.layers.Conv2D(filters=filters,
+                               kernel_size=(3, 3),
+                               strides=1,
+                               kernel_initializer='he_normal',
+                               padding="same")(x)
+    x = tf.keras.layers.BatchNormalization(axis=3)(x)
+
+    shortcut = input_tensor
+    if stride != 1:
+        shortcut = tf.keras.layers.Conv2D(filters=filters,
+                                          kernel_size=(1, 1),
+                                          strides=stride,
+                                          kernel_initializer='he_normal')(input_tensor)
+        shortcut = tf.keras.layers.BatchNormalization(axis=3)(shortcut)
+
+    x = tf.keras.layers.add([x, shortcut])
+    x = tf.keras.layers.Activation('relu')(x)
+
+    return x
+
+
+def resnet_18_basic_block_layer(input_tensor=None, filters=None, num_blocks=None, stride=1):
+    x = resnet_18_basic_block(input_tensor=input_tensor, filters=filters, stride=stride)
+
+    for _ in range(1, num_blocks):
+        x = resnet_18_basic_block(input_tensor=input_tensor, filters=filters, stride=stride)
+
+    return x
+
+

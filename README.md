@@ -18,10 +18,10 @@ resnet_models -t \
     -p \
     -a resnet_34 \ 
     --input-dev ./vox1/dev/wav/ \
-    --input-eval ./vox1/test/wav/ \
+    --input-eval ./vox1/tests/wav/ \
     -p \
     -o ./data/ \
-    --save-model ./test/model/ \
+    --save-models ./tests/models/ \
     -b 300
 ```
 
