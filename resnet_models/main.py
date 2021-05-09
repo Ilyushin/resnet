@@ -3,9 +3,9 @@ import sys
 import argparse
 import tensorflow as tf
 from signal_transformation import helpers, tf_transformation
-from resnet.models import resnet_34, resnet_50
-from resnet.train import train
-from resnet.settings import MAIN
+from resnet_models.models import resnet_34, resnet_50
+from resnet_models.train import train
+from resnet_models.settings import MAIN
 
 tf.config.experimental_run_functions_eagerly(True)
 

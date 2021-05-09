@@ -1,9 +1,9 @@
 """
-Tests for resnet/models/resnet_18.py
+Tests for resnet_models/models/resnet_18.py
 """
 
 import tensorflow as tf
-from resnet.models import resnet_18
+from resnet_models.models import resnet_18
 
 
 def test_resnet_18():

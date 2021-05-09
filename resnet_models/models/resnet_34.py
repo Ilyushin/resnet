@@ -1,5 +1,5 @@
 import tensorflow as tf
-from resnet.models import blocks
+from resnet_models.models import blocks
 
 
 def get_model(input_shape=(257, 998, 1), embeddings_size=512, weight_decay=1e-4, n_classes=5994):
@@ -76,11 +76,11 @@ def get_model(input_shape=(257, 998, 1), embeddings_size=512, weight_decay=1e-4,
         trainable=True,
         kernel_regularizer=tf.keras.regularizers.l2(weight_decay),
         bias_regularizer=tf.keras.regularizers.l2(weight_decay),
-        name='fc6')(x)
+        name='embedding')(x)
 
-    y = tf.keras.layers.Dense(
+    x = tf.keras.layers.Dense(
         n_classes,
-        activation='softmax',
+        # activation='softmax',
         name='fc' + str(embeddings_size),
         kernel_initializer='orthogonal',
         kernel_regularizer=tf.keras.regularizers.l2(weight_decay),
@@ -88,6 +88,8 @@ def get_model(input_shape=(257, 998, 1), embeddings_size=512, weight_decay=1e-4,
         use_bias=False,
         trainable=True
     )(x)
+
+    y = tf.keras.layers.Activation('softmax', name='predictions')(x)
 
     # y = tf.nn.l2_normalize(x, axis=1, epsilon=1e-12, name='output')
 

@@ -2,9 +2,9 @@ import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 from signal_transformation import helpers
-import resnet.metrics as metrics
-from resnet.settings import MAIN
-from resnet.data_generator import DataGenerator
+import resnet_models.metrics as metrics
+from resnet_models.settings import MAIN
+from resnet_models.data_generator import DataGenerator
 
 
 def get_data(path_to_files):
@@ -54,7 +54,7 @@ def train(model, dev_out_dir, valid_out_dir, output_dir, number_dev_files=0, num
 
     # tf.keras.utils.plot_model(
     #     models,
-    #     to_file=os.path.join(output_dir, 'logs/resnet/models.png'),
+    #     to_file=os.path.join(output_dir, 'logs/resnet_models/models.png'),
     #     show_shapes=True,
     #     show_layer_names=True,
     #     rankdir='TB',
@@ -63,12 +63,12 @@ def train(model, dev_out_dir, valid_out_dir, output_dir, number_dev_files=0, num
     # )
 
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
-        log_dir=os.path.join(output_dir, 'logs/resnet/tensorboard/')
+        log_dir=os.path.join(output_dir, 'logs/resnet_models/tensorboard/')
     )
 
-    helpers.create_dir(os.path.join(output_dir, 'logs/resnet/checkpoints/'))
+    helpers.create_dir(os.path.join(output_dir, 'logs/resnet_models/checkpoints/'))
     cp_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath=os.path.join(output_dir, 'logs/resnet/checkpoints/models.{epoch:02d}.tf'),
+        filepath=os.path.join(output_dir, 'logs/resnet_models/checkpoints/models.{epoch:02d}.tf'),
         verbose=0,
         save_weights_only=False,
         save_freq='epoch',

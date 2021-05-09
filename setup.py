@@ -10,7 +10,7 @@ with open("requirements.txt", "r") as fh:
 
 setuptools.setup(
     name="resnet_models",
-    version="1.1.0",
+    version="1.1.3",
     author="Eugene Ilyushin",
     author_email="eugene.ilyushin@gmail.com",
     description="The package contains ResNet architectures which were developed on TensorFlow",
@@ -19,11 +19,11 @@ setuptools.setup(
     url="https://github.com/Ilyushin/resnet",
     packages=setuptools.find_packages(),
     package_dir={
-        'resnet_models': 'resnet',
+        'resnet_models': 'resnet_models',
     },
     entry_points={
         'console_scripts': [
-            'resnet_models=resnet.main:main',
+            'resnet_models=resnet_models.main:main',
         ],
     },
     classifiers=[
