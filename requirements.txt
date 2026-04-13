@@ -1,5 +1,5 @@
 tensorflow
 pylint
 signal-transformation
-pytest==6.2.2
+pytest==9.0.3
 pytest-cov==2.11.1
